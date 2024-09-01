@@ -5,22 +5,23 @@ const userController = require("../controller/user");
 const router = express.Router();
 const secretKey = process.env.SECRET_KEY;
 
-const authMiddleware = (req, res, next)=>{
-    const authHeader = req.headers && req.headers.authorization;
-    if(!authHeader){
-        res.status(400).send("Token does not exist");
-    };
-    const token = authHeader.split(" ")[1];
-    try {
-        const isValidUser = jwt.verify(token, secretKey);
-        req.user = isValidUser;
-    } catch (error) {
-        res.status(400).send("Token is invalid");
-    }
-   next();
-}
+const authMiddleware = (req, res, next) => {
+  const token =
+    req.headers.authorization && req.headers.authorization.split(" ")[1];
+  if (!token) {
+    res.status(401).json({ error: "Authorization token is missing" });
+  }
+  try {
+    const isValidUser = jwt.verify(token, secretKey);
+    req.user = isValidUser;
+  } catch (error) {
+    res.status(401).json({ error: "Token is invalid or expired" });
+  }
+  next();
+};
 
-exports.router = router.get("/", userController.getAllUsers)
-                 .post("/registration", userController.registerUser)
-                 .post("/login", userController.loginUser)
-                 .get("/protected", authMiddleware, userController.protected)
+exports.router = router
+  .get("/", userController.getAllUsers)
+  .post("/registration", userController.registerUser)
+  .post("/login", userController.loginUser)
+  .get("/protected", authMiddleware, userController.protected);
